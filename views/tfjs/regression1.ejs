@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>
+  </head>
+<body>
+<header>
+    <%- include('../header') %>
+</header>
+<main>
+    <div class="container">  
+        <label for="trainX" class="col-form-label">학습 데이터(X: Features)</label>
+        <input type="text" class="form-control" id="trainX"/>
+        <label for="trainY" class="col-form-label">학습 데이터(Y: Labels)</label>
+        <input type="text" class="form-control" id="trainY"/>
+        <br>
+        <div id="alert"></div>
+        <button type="button" class="btn btn-primary" onclick="fit()">학습</button>
+        <br>
+        <div id="rule"></div>
+        <br>
+        <label for="testX" class="col-form-label">테스트 데이터(X: Features)</label>
+        <input type="text" class="form-control" id="testX"/>
+        <br>
+        <button type="button" class="btn btn-primary" id="pred_button" onclick="predict()">예측</button>
+        <div id="prediction"></div>
+    </div>
+</main>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
+
+<script type="text/javascript">
+    let model;
+    //학습함수
+    async function fit() {
+        let trainX = document.getElementById('trainX').value; //1,2,3,4
+        let trainY = document.getElementById('trainY').value; //3,4,5,6
+
+        trainX = trainX.split(',').map(function(x) {    // ['1','2','3','4'] => [1,2,3,4]
+            return parseInt(x);
+        });
+        trainY = trainY.split(',').map(function(y) {    // [3,4,5,6]
+            return parseInt(y);
+        });
+
+				if (trainX.length * trainY.length <= 0 || trainX.length != trainY.length) {
+            document.getElementById('alert').innerHTML = 
+                `<div class="alert  alert-danger" role="alert">
+                    데이터를 확인하세요.
+                </div>`;
+        }   
+
+        trainX = tf.tensor(trainX, [trainX.length]);
+        trainY = tf.tensor(trainY, [trainY.length]);
+
+        model = tf.sequential();
+        model.add(tf.layers.dense({units: 1, inputShape: [1]}));
+        model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+
+        model.fit(trainX, trainY, {
+            epochs:500,
+            callbacks: {
+                onEpochEnd: (epoch, logs) => {
+                    console.log(epoch, `Loss: ${logs.loss}`);
+                }
+            },
+        }).then(()=> {
+            let weight = model.getWeights()[0].arraySync();
+            let bias = model.getWeights()[1].arraySync();
+            document.getElementById('rule').innerHTML = 
+                `찾은 규칙: Y = ${weight[0]} * X + ${bias[0]}`;
+        });
+    }
+    //예측함수
+    async function predict() {
+        let testX = document.getElementById('testX').value; //10, 20, 30, 40
+        testX = testX.split(',').map(function(x) {    // [10,20,30,40]
+            return parseInt(x);
+        });
+        testX = tf.tensor(testX, [testX.length]);
+        const preds = model.predict(testX).arraySync();
+        await model.save('downloads://reg_model');
+        let html = '';
+        for(let i=0; i<preds.length; i++) {
+            html += `${preds[i]}<br>`;
+        }
+        document.getElementById('prediction').innerHTML = html;
+    }
+</script>
+</html>
