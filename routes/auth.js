@@ -7,6 +7,7 @@ module.exports = {
         console.log('req' );
 
         console.log('auth'); 
+        
         console.log('auth' );
 
         if(req.isAuthenticated()) {
