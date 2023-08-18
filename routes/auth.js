@@ -4,7 +4,7 @@
 
 module.exports = {
     CheckAuth: async function(req, res, next) {
-        console.log('auth');
+        console.log('auth' );
         if(req.isAuthenticated()) {
             console.log(req);
             next();  //만약에 인증 확인 성공햇다면 다음 미들웨어로 넘겨주겠다 
